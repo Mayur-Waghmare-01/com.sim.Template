@@ -1985,6 +1985,7 @@ MonoBehaviour:
   impactRadius: 0.35
   spread: 0.01
   impactFx: {fileID: 0}
+  nextShot: 0
 --- !u!1 &137483843
 GameObject:
   m_ObjectHideFlags: 0
@@ -12414,7 +12415,6 @@ GameObject:
   - component: {fileID: 714537244}
   - component: {fileID: 714537243}
   - component: {fileID: 714537242}
-  - component: {fileID: 714537245}
   m_Layer: 0
   m_Name: Cube_cluster
   m_TagString: Untagged
@@ -12570,24 +12570,6 @@ Transform:
   - {fileID: 753711831}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &714537245
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 714537241}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f28462fa757e4fc4ebc2cf05b32ddc6a, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::DestructibleBuilding
-  linkPadding: 0.01
-  groundTolerance: 0.2
-  debrisLifetime: 8
-  explosionForce: 800
-  chunkHealth: 100
-  bulletForce: 6
 --- !u!43 &717479083
 Mesh:
   m_ObjectHideFlags: 0
@@ -27608,9 +27590,8 @@ MonoBehaviour:
   linkPadding: 0.1
   groundTolerance: 0.2
   debrisLifetime: 8
-  explosionForce: 800
   chunkHealth: 100
-  bulletForce: 6
+  explosionForce: 800
 --- !u!65 &1939226382
 BoxCollider:
   m_ObjectHideFlags: 0

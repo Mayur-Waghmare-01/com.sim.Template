@@ -1,21 +1,21 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-// Put this on the root of a pre-fractured building. Every child with a MeshFilter is a chunk.
+// Put this on the root of a pre-fractured building. Every child with a MeshFilter becomes
+// a chunk that Cowsins' Bullet.cs can damage directly (via IDamageable on DestructibleChunk).
 public class DestructibleBuilding : MonoBehaviour
 {
     [SerializeField] float linkPadding = 0.1f;     // how close chunks must be to count as connected
     [SerializeField] float groundTolerance = 0.2f; // chunks this near the lowest point are anchored
     [SerializeField] float debrisLifetime = 8f;
+    [SerializeField] float chunkHealth = 100f;      // Bullet's Damage value chips this down
     [SerializeField] float explosionForce = 800f;
-    [SerializeField] float chunkHealth = 100f;     // bullets chip this down, chunk breaks at 0
-    [SerializeField] float bulletForce = 6f;
 
     class Chunk
     {
-        public float health;
         public Collider col;
         public Rigidbody rb;
+        public DestructibleChunk dc;
         public bool anchored, broken;
         public List<Chunk> links = new();
     }
@@ -29,12 +29,17 @@ public class DestructibleBuilding : MonoBehaviour
 
         foreach (var mf in GetComponentsInChildren<MeshFilter>())
         {
-            var mc = mf.gameObject.AddComponent<MeshCollider>();
+            var go = mf.gameObject;
+            var mc = go.AddComponent<MeshCollider>();
             mc.convex = true;
-            var rb = mf.gameObject.AddComponent<Rigidbody>();
+            var rb = go.AddComponent<Rigidbody>();
             rb.isKinematic = true;
+            var dc = go.AddComponent<DestructibleChunk>();
+            dc.Init(chunkHealth);
 
-            var c = new Chunk { col = mc, rb = rb, health = chunkHealth };
+            var c = new Chunk { col = mc, rb = rb, dc = dc };
+            dc.OnBroken += _ => HandleBroken(c);
+
             chunks.Add(c);
             map[mc] = c;
             baseY = Mathf.Min(baseY, mc.bounds.min.y);
@@ -52,25 +57,28 @@ public class DestructibleBuilding : MonoBehaviour
         }
     }
 
+    // For explosions/grenades that don't go through Cowsins' Bullet (which already
+    // damages + force-pushes chunks on its own via IDamageable + its own AddExplosionForce loop).
     public void Explode(Vector3 pos, float radius)
     {
         foreach (var c in chunks)
         {
             if (c.broken) continue;
-            if (Vector3.Distance(c.col.ClosestPoint(pos), pos) <= radius) Break(c, pos, radius);
+            if (Vector3.Distance(c.col.ClosestPoint(pos), pos) <= radius)
+                c.dc.Damage(chunkHealth * 2f, false); // triggers HandleBroken via OnBroken
         }
-        CheckIntegrity(pos, radius);
     }
 
-    void Break(Chunk c, Vector3 pos, float radius)
+    void HandleBroken(Chunk c)
     {
+        if (c.broken) return; // guard against double-trigger
         c.broken = true;
         c.rb.isKinematic = false;
-        c.rb.AddExplosionForce(explosionForce, pos, radius * 1.5f, 0.3f);
         Destroy(c.col.gameObject, debrisLifetime + Random.value * 3f);
+        CheckIntegrity(c.col.bounds.center, 3f);
     }
 
-    // Any chunk no longer connected to the ground through intact chunks falls.
+    // Any chunk no longer connected to the ground through intact chunks falls too.
     void CheckIntegrity(Vector3 pos, float radius)
     {
         var visited = new HashSet<Chunk>();
@@ -84,30 +92,6 @@ public class DestructibleBuilding : MonoBehaviour
                 if (!n.broken && visited.Add(n)) stack.Push(n);
 
         foreach (var c in chunks)
-            if (!c.broken && !visited.Contains(c)) Break(c, pos, radius * 2f);
-    }
-
-    // Bullet hit: small radius, damage accumulates, chunks get pushed along the bullet direction.
-    public void Hit(Vector3 point, Vector3 dir, float radius, float damage)
-    {
-        bool anyBroken = false;
-
-        foreach (var c in chunks)
-        {
-            if (c.broken) continue;
-            float d = Vector3.Distance(c.col.ClosestPoint(point), point);
-            if (d > radius) continue;
-
-            c.health -= damage * (1f - d / radius);
-            if (c.health > 0f) continue;
-
-            c.broken = true;
-            c.rb.isKinematic = false;
-            c.rb.AddForceAtPosition(dir.normalized * bulletForce, point, ForceMode.Impulse);
-            Destroy(c.col.gameObject, debrisLifetime + Random.value * 3f);
-            anyBroken = true;
-        }
-
-        if (anyBroken) CheckIntegrity(point, radius);
+            if (!c.broken && !visited.Contains(c)) c.dc.Damage(chunkHealth * 2f, false);
     }
 }
