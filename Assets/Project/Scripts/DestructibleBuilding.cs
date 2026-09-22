@@ -10,6 +10,7 @@ public class DestructibleBuilding : MonoBehaviour
     [SerializeField] float debrisLifetime = 8f;
     [SerializeField] float chunkHealth = 100f;      // Bullet's Damage value chips this down
     [SerializeField] float explosionForce = 800f;
+    [SerializeField] GameObject impactVFX;          // optional dust/spark, spawned on every hit (not just the break)
 
     class Chunk
     {
@@ -39,6 +40,7 @@ public class DestructibleBuilding : MonoBehaviour
 
             var c = new Chunk { col = mc, rb = rb, dc = dc };
             dc.OnBroken += _ => HandleBroken(c);
+            dc.OnImpact += (_, point) => { if (impactVFX != null) Destroy(Instantiate(impactVFX, point, Quaternion.identity), 2f); };
 
             chunks.Add(c);
             map[mc] = c;
