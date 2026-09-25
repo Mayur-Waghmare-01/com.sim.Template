@@ -1,0 +1,16 @@
+{
+    "name": "Shatter.Editor",
+    "rootNamespace": "Shatter.EditorTools",
+    "references": [
+        "Shatter.Runtime"
+    ],
+    "includePlatforms": [ "Editor" ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

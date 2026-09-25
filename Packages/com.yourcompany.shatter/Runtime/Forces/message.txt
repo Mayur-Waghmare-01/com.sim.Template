@@ -1,0 +1,89 @@
+using UnityEngine;
+
+/// <summary>
+/// Live Inspector access to every tolerance and weightage used by
+/// SpatterAnalyzer. Drag these sliders in Play mode and watch SpatterSystem's
+/// debug breakdown respond immediately — no recompiling needed to tune.
+///
+/// Put this on any GameObject in the scene (once PER SCENE). It pushes its
+/// values into SpatterAnalyzer's static fields every frame in Edit and Play
+/// mode. Each scene keeps its own tuning — this is NOT a cross-scene
+/// singleton, so different scenes can have completely different sliders.
+/// </summary>
+[ExecuteAlways]
+public class SpatterTuningConfig : MonoBehaviour
+{
+    public static SpatterTuningConfig Instance { get; private set; }
+
+    [Header("Tolerances")]
+    [Tooltip("mm of slack beyond the ideal arc length range before arc penalty maxes out")]
+    [Range(0.5f, 1000f)] public float arcTolerance = 3f;
+    [Tooltip("Speed slack beyond the green zone before speed penalty maxes out")]
+    [Range(1f, 1000f)] public float speedTolerance = 5f;
+    [Tooltip("Degrees of slack beyond the Optimal angle zone before angle penalty maxes out")]
+    [Range(0f, 1000f)] public float angleTolerance = 15f;
+    [Tooltip("Discrete feed-rate steps away from ideal before feed penalty maxes out. " +
+             "Set to 0 to IGNORE feed rate entirely for this scene (feed penalty always 0).")]
+    [Range(0, 1000)] public int feedToleranceSteps = 3;
+
+    [Header("SMAW Weights (should sum to 100)")]
+    [Range(0f, 100f)] public float smawArcWeight = 40f;
+    [Range(0f, 100f)] public float smawSpeedWeight = 30f;
+    [Range(0f, 100f)] public float smawAngleWeight = 30f;
+
+    [Header("GMAW Weights (should sum to 100)")]
+    [Range(0f, 100f)] public float gmawFeedWeight = 30f;
+    [Range(0f, 100f)] public float gmawArcWeight = 30f;
+    [Range(0f, 100f)] public float gmawSpeedWeight = 20f;
+    [Range(0f, 100f)] public float gmawAngleWeight = 20f;
+
+    [Header("FCAW Weights (should sum to 100)")]
+    [Range(0f, 100f)] public float fcawBaseWeight = 0f;
+    [Range(0f, 100f)] public float fcawFeedWeight = 30f;
+    [Range(0f, 100f)] public float fcawArcWeight = 30f;
+    [Range(0f, 100f)] public float fcawSpeedWeight = 20f;
+    [Range(0f, 100f)] public float fcawAngleWeight = 20f;
+
+    private void Awake()
+    {
+        // No cross-scene singleton anymore: each scene's own config object
+        // just becomes the active Instance for as long as that scene is
+        // loaded, and applies its own values. No Destroy(), no
+        // DontDestroyOnLoad() — so a new scene's config isn't blocked by
+        // an old scene's config surviving in memory.
+        Instance = this;
+    }
+
+    private void Update()
+    {
+        Apply();
+    }
+
+    private void OnValidate()
+    {
+        Apply();
+    }
+
+    private void Apply()
+    {
+        SpatterAnalyzer.ArcTolerance = arcTolerance;
+        SpatterAnalyzer.SpeedTolerance = speedTolerance;
+        SpatterAnalyzer.AngleTolerance = angleTolerance;
+        SpatterAnalyzer.FeedToleranceSteps = feedToleranceSteps;
+
+        SpatterAnalyzer.SMAW_ArcWeight = smawArcWeight;
+        SpatterAnalyzer.SMAW_SpeedWeight = smawSpeedWeight;
+        SpatterAnalyzer.SMAW_AngleWeight = smawAngleWeight;
+
+        SpatterAnalyzer.GMAW_FeedWeight = gmawFeedWeight;
+        SpatterAnalyzer.GMAW_ArcWeight = gmawArcWeight;
+        SpatterAnalyzer.GMAW_SpeedWeight = gmawSpeedWeight;
+        SpatterAnalyzer.GMAW_AngleWeight = gmawAngleWeight;
+
+        SpatterAnalyzer.FCAW_BaseWeight = fcawBaseWeight;
+        SpatterAnalyzer.FCAW_FeedWeight = fcawFeedWeight;
+        SpatterAnalyzer.FCAW_ArcWeight = fcawArcWeight;
+        SpatterAnalyzer.FCAW_SpeedWeight = fcawSpeedWeight;
+        SpatterAnalyzer.FCAW_AngleWeight = fcawAngleWeight;
+    }
+}
