@@ -31,8 +31,19 @@ public class DestructibleBuilding : MonoBehaviour
         foreach (var mf in GetComponentsInChildren<MeshFilter>())
         {
             var go = mf.gameObject;
-            var mc = go.AddComponent<MeshCollider>();
-            mc.convex = true;
+            Collider mc;
+            var size = mf.sharedMesh.bounds.size;
+            bool isFlat = size.x < 0.001f || size.y < 0.001f || size.z < 0.001f;
+            if (isFlat)
+            {
+                mc = go.AddComponent<BoxCollider>(); // convex hull fails on coplanar/degenerate pieces
+            }
+            else
+            {
+                var meshCol = go.AddComponent<MeshCollider>();
+                meshCol.convex = true;
+                mc = meshCol;
+            }
             var rb = go.AddComponent<Rigidbody>();
             rb.isKinematic = true;
             var dc = go.AddComponent<DestructibleChunk>();

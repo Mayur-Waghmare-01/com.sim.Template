@@ -34,7 +34,7 @@ namespace Shatter.Core
         {
             public int nodeId;
             public GameObject go;
-            public MeshCollider collider;
+            public Collider collider;
             public ShatterMeshData meshData;
         }
 
@@ -88,13 +88,30 @@ namespace Shatter.Core
             var mr = go.AddComponent<MeshRenderer>();
             mr.sharedMaterials = data.GetMaterialArray();
 
-            var mc = go.AddComponent<MeshCollider>();
-            mc.sharedMesh = mesh;
-            mc.convex = true;
+            Collider col;
+            if (mesh.vertexCount < 4 || IsDegenerate(mesh.bounds.size))
+            {
+                // PhysX's convex hull needs 4+ non-coplanar vertices - slivers from
+                // the Voronoi cut sometimes don't have that. A box collider always works.
+                var box = go.AddComponent<BoxCollider>();
+                box.center = mesh.bounds.center;
+                box.size = Vector3.Max(mesh.bounds.size, Vector3.one * 0.01f);
+                col = box;
+            }
+            else
+            {
+                var mc = go.AddComponent<MeshCollider>();
+                mc.sharedMesh = mesh;
+                mc.convex = true;
+                col = mc;
+            }
 
-            fragments[nodeId] = new FragmentSlot { nodeId = nodeId, go = go, collider = mc, meshData = data };
-            colliderToNode[mc] = nodeId;
+            fragments[nodeId] = new FragmentSlot { nodeId = nodeId, go = go, collider = col, meshData = data };
+            colliderToNode[col] = nodeId;
         }
+
+        private static bool IsDegenerate(Vector3 size) =>
+            size.x < 0.001f || size.y < 0.001f || size.z < 0.001f;
 
         private void RefreshPhysicsState()
         {
